@@ -1,5 +1,5 @@
 // Google Gemini API設定
-const GEMINI_API_KEY = 'AIzaSyDSnHWWvMafSt_1HOiTV4n8vNgLJABtmTM';
+const GEMINI_API_KEY = 'AIzaSyALi45AZVhyfkV0xAzwBfU4Wwefz9muJuo';
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent';
 
 // DOM要素
