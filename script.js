@@ -1,6 +1,6 @@
 // Google Gemini API設定
-const GEMINI_API_KEY = 'AIzaSyARWuy4vKfuKJSPzvA65G2DgrrHJkYp8QA';
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent';
+const GEMINI_API_KEY = 'AIzaSyCSgQ69xViEBucKWHv3w7J67ceQxrlgHBo';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent';
 
 // DOM要素
 const urlForm = document.getElementById('urlForm');
