@@ -1,6 +1,6 @@
 // Google Gemini API設定
-const GEMINI_API_KEY = 'AIzaSyALi45AZVhyfkV0xAzwBfU4Wwefz9muJuo';
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+const GEMINI_API_KEY = 'AIzaSyDSnHWWvMafSt_1HOiTV4n8vNgLJABtmTM';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent';
 
 // DOM要素
 const urlForm = document.getElementById('urlForm');
@@ -138,7 +138,13 @@ URLの内容が取得できない場合は、URLのドメイン名やパスか�
                         parts: [{
                             text: urlPrompt
                         }]
-                    }]
+                    }],
+                    generationConfig: {
+                        temperature: 0.7,
+                        topK: 40,
+                        topP: 0.95,
+                        maxOutputTokens: 100
+                    }
                 })
             });
             
@@ -171,7 +177,13 @@ ${content.substring(0, 3000)} // 内容が長すぎる場合は最初の3000文�
                     parts: [{
                         text: prompt
                     }]
-                }]
+                }],
+                generationConfig: {
+                    temperature: 0.7,
+                    topK: 40,
+                    topP: 0.95,
+                    maxOutputTokens: 100
+                }
             })
         });
 
@@ -213,10 +225,49 @@ async function summarizeUrl(url) {
     }
 }
 
-// APIキーの設定を促すメッセージ
-if (GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY') {
-    showError('Google Gemini APIキーを設定してください。script.jsファイルのGEMINI_API_KEYを実際のAPIキーに置き換えてください。');
+// APIキーの検証
+async function validateApiKey() {
+    try {
+        const testResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: "こんにちは"
+                    }]
+                }],
+                generationConfig: {
+                    maxOutputTokens: 10
+                }
+            })
+        });
+        
+        if (!testResponse.ok) {
+            const errorData = await testResponse.json();
+            console.error('APIキー検証エラー:', errorData);
+            showError(`APIキーが無効です: ${errorData.error?.message || '不明なエラー'}`);
+            return false;
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('APIキー検証エラー:', error);
+        showError('APIキーの検証に失敗しました。APIキーが正しいか確認してください。');
+        return false;
+    }
 }
+
+// ページ読み込み時にAPIキーを検証
+document.addEventListener('DOMContentLoaded', async () => {
+    if (GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY') {
+        showError('Google Gemini APIキーを設定してください。script.jsファイルのGEMINI_API_KEYを実際のAPIキーに置き換えてください。');
+    } else {
+        await validateApiKey();
+    }
+});
 
 // 入力フィールドのリアルタイムバリデーション
 urlInput.addEventListener('input', () => {
