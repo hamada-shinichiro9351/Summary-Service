@@ -1,6 +1,6 @@
 // Google Gemini API設定
 const GEMINI_API_KEY = 'AIzaSyDSnHWWvMafSt_1HOiTV4n8vNgLJABtmTM';
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent';
 
 // DOM要素
 const urlForm = document.getElementById('urlForm');
@@ -148,25 +148,7 @@ URLの内容が取得できない場合は、URLのドメイン名やパスか�
                         topK: 40,
                         topP: 0.95,
                         maxOutputTokens: 100
-                    },
-                    safetySettings: [
-                        {
-                            category: "HARM_CATEGORY_HARASSMENT",
-                            threshold: "BLOCK_NONE"
-                        },
-                        {
-                            category: "HARM_CATEGORY_HATE_SPEECH",
-                            threshold: "BLOCK_NONE"
-                        },
-                        {
-                            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                            threshold: "BLOCK_NONE"
-                        },
-                        {
-                            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-                            threshold: "BLOCK_NONE"
-                        }
-                    ]
+                    }
                 })
             });
             
@@ -209,25 +191,7 @@ ${content.substring(0, 3000)} // 内容が長すぎる場合は最初の3000文�
                         topK: 40,
                         topP: 0.95,
                         maxOutputTokens: 100
-                    },
-                    safetySettings: [
-                        {
-                            category: "HARM_CATEGORY_HARASSMENT",
-                            threshold: "BLOCK_NONE"
-                        },
-                        {
-                            category: "HARM_CATEGORY_HATE_SPEECH",
-                            threshold: "BLOCK_NONE"
-                        },
-                        {
-                            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                            threshold: "BLOCK_NONE"
-                        },
-                        {
-                            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-                            threshold: "BLOCK_NONE"
-                        }
-                    ]
+                    }
                 })
         });
 
@@ -291,25 +255,7 @@ async function validateApiKey() {
                 }],
                 generationConfig: {
                     maxOutputTokens: 10
-                },
-                safetySettings: [
-                    {
-                        category: "HARM_CATEGORY_HARASSMENT",
-                        threshold: "BLOCK_NONE"
-                    },
-                    {
-                        category: "HARM_CATEGORY_HATE_SPEECH",
-                        threshold: "BLOCK_NONE"
-                    },
-                    {
-                        category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                        threshold: "BLOCK_NONE"
-                    },
-                    {
-                        category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-                        threshold: "BLOCK_NONE"
-                    }
-                ]
+                }
             })
         });
         
