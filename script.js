@@ -242,21 +242,24 @@ async function summarizeUrl(url) {
 async function validateApiKey() {
     try {
         console.log('APIキー検証開始...');
+        console.log('使用するURL:', `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`);
+        
+        const requestBody = {
+            contents: [{
+                parts: [{
+                    text: "こんにちは"
+                }]
+            }]
+        };
+        
+        console.log('リクエストボディ:', JSON.stringify(requestBody, null, 2));
+        
         const testResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: "こんにちは"
-                    }]
-                }],
-                generationConfig: {
-                    maxOutputTokens: 10
-                }
-            })
+            body: JSON.stringify(requestBody)
         });
         
         console.log('APIレスポンス:', testResponse.status, testResponse.statusText);
@@ -283,6 +286,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY') {
         showError('Google Gemini APIキーを設定してください。script.jsファイルのGEMINI_API_KEYを実際のAPIキーに置き換えてください。');
     } else {
+        console.log('設定されたAPIキー:', GEMINI_API_KEY.substring(0, 10) + '...');
+        console.log('APIエンドポイント:', GEMINI_API_URL);
         await validateApiKey();
     }
 });
