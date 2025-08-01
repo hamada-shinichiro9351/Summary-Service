@@ -2,6 +2,17 @@
 const GEMINI_API_KEY = 'AIzaSyALi45AZVhyfkV0xAzwBfU4Wwefz9muJuo';
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-turbo:generateContent';
 
+// 利用可能モデル一覧を取得して console に出力する関数
+async function listModels() {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`
+  );
+  const data = await res.json();
+  console.log('Available models:', data.models.map(m => m.name));
+}
+// デバッグ実行：読み込み直後に一度だけ呼び出し
+listModels();
+
 // DOM要素
 const urlForm = document.getElementById('urlForm');
 const urlInput = document.getElementById('urlInput');
