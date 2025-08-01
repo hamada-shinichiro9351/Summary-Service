@@ -75,44 +75,36 @@ function hideResults() {
 // URLの内容を取得
 async function fetchUrlContent(url) {
     try {
-        // 複数のプロキシサービスを試行
-        const proxyServices = [
-            `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-            `https://cors-anywhere.herokuapp.com/${url}`,
-            `https://thingproxy.freeboard.io/fetch/${url}`
-        ];
+        // より信頼性の高いプロキシサービスを使用
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
         
-        for (const proxyUrl of proxyServices) {
-            try {
-                const response = await fetch(proxyUrl, {
-                    method: 'GET',
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                    },
-                    timeout: 10000
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.contents) {
-                        return data.contents;
-                    } else if (data.text) {
-                        return data.text;
-                    } else {
-                        const text = await response.text();
-                        return text;
-                    }
-                }
-            } catch (proxyError) {
-                console.log(`プロキシサービスエラー: ${proxyUrl}`, proxyError);
-                continue;
+        const response = await fetch(proxyUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1'
             }
-        }
+        });
         
-        throw new Error('すべてのプロキシサービスでURLの取得に失敗しました');
+        if (response.ok) {
+            const content = await response.text();
+            // HTMLタグを除去してテキストのみを抽出
+            const textContent = content.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                                    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                                    .replace(/<[^>]*>/g, ' ')
+                                    .replace(/\s+/g, ' ')
+                                    .trim();
+            return textContent;
+        } else {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
     } catch (error) {
         console.error('URL取得エラー:', error);
-        throw new Error('URLの内容を取得できませんでした。一部のサイトではセキュリティ設定により取得できない場合があります。URLが正しいか確認してください。');
+        // エラーが発生しても空文字を返して、URLから推測する処理に進む
+        return '';
     }
 }
 
@@ -127,6 +119,12 @@ async function summarizeWithGemini(content, url) {
 URL: ${url}
 
 URLの内容が取得できない場合は、URLのドメイン名やパスから推測して、そのサイトの一般的な内容を要約してください。
+例えば：
+- github.com → ソフトウェア開発のプラットフォーム
+- wikipedia.org → オンライン百科事典
+- stackoverflow.com → プログラマー向けQ&Aサイト
+- google.com → 検索エンジン
+
 要約は日本語で、簡潔で分かりやすく、要点を押さえたものにしてください。
 `;
             
@@ -198,7 +196,7 @@ async function summarizeUrl(url) {
     hideResults();
     
     try {
-        // URLの内容を取得
+        // URLの内容を取得（失敗しても空文字が返される）
         const content = await fetchUrlContent(url);
         
         // Gemini APIで要約
@@ -208,7 +206,8 @@ async function summarizeUrl(url) {
         showResult(summary, url);
         
     } catch (error) {
-        showError(error.message);
+        console.error('要約エラー:', error);
+        showError('要約処理中にエラーが発生しました。しばらく時間をおいて再試行してください。');
     } finally {
         setLoading(false);
     }
