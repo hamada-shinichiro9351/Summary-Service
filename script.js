@@ -1,17 +1,6 @@
 // Google Gemini API設定
 const GEMINI_API_KEY = 'AIzaSyALi45AZVhyfkV0xAzwBfU4Wwefz9muJuo';
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-turbo:generateContent';
-
-// 利用可能モデル一覧を取得して console に出力する関数
-async function listModels() {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`
-  );
-  const data = await res.json();
-  console.log('Available models:', data.models.map(m => m.name));
-}
-// デバッグ実行：読み込み直後に一度だけ呼び出し
-listModels();
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
 
 // DOM要素
 const urlForm = document.getElementById('urlForm');
@@ -86,63 +75,61 @@ function hideResults() {
 // URLの内容を取得
 async function fetchUrlContent(url) {
     try {
-        // より信頼性の高いプロキシサービスを使用
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        // 複数のプロキシサービスを試行
+        const proxyServices = [
+            `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+            `https://cors-anywhere.herokuapp.com/${url}`,
+            `https://thingproxy.freeboard.io/fetch/${url}`
+        ];
         
-        const response = await fetch(proxyUrl, {
-            method: 'GET',
-            headers: {
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5',
-                'Accept-Encoding': 'gzip, deflate',
-                'Connection': 'keep-alive',
-                'Upgrade-Insecure-Requests': '1'
+        for (const proxyUrl of proxyServices) {
+            try {
+                const response = await fetch(proxyUrl, {
+                    method: 'GET',
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    },
+                    timeout: 10000
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.contents) {
+                        return data.contents;
+                    } else if (data.text) {
+                        return data.text;
+                    } else {
+                        const text = await response.text();
+                        return text;
+                    }
+                }
+            } catch (proxyError) {
+                console.log(`プロキシサービスエラー: ${proxyUrl}`, proxyError);
+                continue;
             }
-        });
-        
-        if (response.ok) {
-            const content = await response.text();
-            // HTMLタグを除去してテキストのみを抽出
-            const textContent = content.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-                                    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-                                    .replace(/<[^>]*>/g, ' ')
-                                    .replace(/\s+/g, ' ')
-                                    .trim();
-            return textContent;
-        } else {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
+        
+        throw new Error('すべてのプロキシサービスでURLの取得に失敗しました');
     } catch (error) {
         console.error('URL取得エラー:', error);
-        // エラーが発生しても空文字を返して、URLから推測する処理に進む
-        return '';
+        throw new Error('URLの内容を取得できませんでした。一部のサイトではセキュリティ設定により取得できない場合があります。URLが正しいか確認してください。');
     }
 }
 
 // Gemini APIを使用して要約
 async function summarizeWithGemini(content, url) {
     try {
-        console.log('Gemini API呼び出し開始');
-        
         // 内容が空または短すぎる場合の処理
         if (!content || content.length < 10) {
-            console.log('URLから推測モード');
             // URLから直接要約を試行
             const urlPrompt = `
 以下のURLのウェブページについて、1行（50文字以内）で要約してください。
 URL: ${url}
 
 URLの内容が取得できない場合は、URLのドメイン名やパスから推測して、そのサイトの一般的な内容を要約してください。
-例えば：
-- github.com → ソフトウェア開発のプラットフォーム
-- wikipedia.org → オンライン百科事典
-- stackoverflow.com → プログラマー向けQ&Aサイト
-- google.com → 検索エンジン
-
 要約は日本語で、簡潔で分かりやすく、要点を押さえたものにしてください。
 `;
             
-            console.log('APIリクエスト送信...');
             const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
                 method: 'POST',
                 headers: {
@@ -153,26 +140,16 @@ URLの内容が取得できない場合は、URLのドメイン名やパスか�
                         parts: [{
                             text: urlPrompt
                         }]
-                    }],
-                    generationConfig: {
-                        temperature: 0.7,
-                        topK: 40,
-                        topP: 0.95,
-                        maxOutputTokens: 100
-                    }
+                    }]
                 })
             });
             
-            console.log('APIレスポンス:', response.status, response.statusText);
-            
             if (!response.ok) {
                 const errorData = await response.json();
-                console.error('APIエラー詳細:', errorData);
                 throw new Error(`API エラー: ${errorData.error?.message || '不明なエラー'}`);
             }
             
             const data = await response.json();
-            console.log('APIレスポンス成功:', data);
             return data.candidates[0].content.parts[0].text.trim();
         }
         
@@ -191,19 +168,13 @@ ${content.substring(0, 3000)} // 内容が長すぎる場合は最初の3000文�
             headers: {
                 'Content-Type': 'application/json',
             },
-                            body: JSON.stringify({
-                    contents: [{
-                        parts: [{
-                            text: prompt
-                        }]
-                    }],
-                    generationConfig: {
-                        temperature: 0.7,
-                        topK: 40,
-                        topP: 0.95,
-                        maxOutputTokens: 100
-                    }
-                })
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: prompt
+                    }]
+                }]
+            })
         });
 
         if (!response.ok) {
@@ -227,81 +198,26 @@ async function summarizeUrl(url) {
     hideResults();
     
     try {
-        console.log('要約処理開始:', url);
-        
-        // URLの内容を取得（失敗しても空文字が返される）
+        // URLの内容を取得
         const content = await fetchUrlContent(url);
-        console.log('URL内容取得完了:', content ? content.length : 0, '文字');
         
         // Gemini APIで要約
         const summary = await summarizeWithGemini(content, url);
-        console.log('要約完了:', summary);
         
         // 結果を表示
         showResult(summary, url);
         
     } catch (error) {
-        console.error('要約エラー詳細:', error);
-        console.error('エラースタック:', error.stack);
-        showError(`要約処理中にエラーが発生しました: ${error.message}`);
+        showError(error.message);
     } finally {
         setLoading(false);
     }
 }
 
-// APIキーの検証
-async function validateApiKey() {
-    try {
-        console.log('APIキー検証開始...');
-        console.log('使用するURL:', `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`);
-        
-        const requestBody = {
-            contents: [{
-                parts: [{
-                    text: "こんにちは"
-                }]
-            }]
-        };
-        
-        console.log('リクエストボディ:', JSON.stringify(requestBody, null, 2));
-        
-        const testResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestBody)
-        });
-        
-        console.log('APIレスポンス:', testResponse.status, testResponse.statusText);
-        
-        if (!testResponse.ok) {
-            const errorData = await testResponse.json();
-            console.error('APIキー検証エラー:', errorData);
-            showError(`APIキーが無効です: ${errorData.error?.message || '不明なエラー'}`);
-            return false;
-        }
-        
-        const data = await testResponse.json();
-        console.log('API検証成功:', data);
-        return true;
-    } catch (error) {
-        console.error('APIキー検証エラー:', error);
-        showError(`APIキーの検証に失敗しました: ${error.message}`);
-        return false;
-    }
+// APIキーの設定を促すメッセージ
+if (GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY') {
+    showError('Google Gemini APIキーを設定してください。script.jsファイルのGEMINI_API_KEYを実際のAPIキーに置き換えてください。');
 }
-
-// ページ読み込み時にAPIキーを検証
-document.addEventListener('DOMContentLoaded', async () => {
-    if (GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY') {
-        showError('Google Gemini APIキーを設定してください。script.jsファイルのGEMINI_API_KEYを実際のAPIキーに置き換えてください。');
-    } else {
-        console.log('設定されたAPIキー:', GEMINI_API_KEY.substring(0, 10) + '...');
-        console.log('APIエンドポイント:', GEMINI_API_URL);
-        await validateApiKey();
-    }
-});
 
 // 入力フィールドのリアルタイムバリデーション
 urlInput.addEventListener('input', () => {
