@@ -2,7 +2,6 @@
 
 Google Gemini AIを使用して、URLの内容を1行（50文字以内）で要約するWebアプリケーションです。
 
-![URL 1行要約サービス](url_summary_service.png)
 
 ## ✨ 主な機能
 
@@ -177,3 +176,4 @@ const GEMINI_API_KEY = 'AIzaSyBxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
 **開発者**: [Your Name]  
 **バージョン**: 1.0.0  
 **最終更新**: 2024年 
+
